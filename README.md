@@ -1,10 +1,8 @@
----
 
 # 🌐 FlowSync Maestro
 
  **Orchestrating humans, robots, and agents in BPMN 2.0 for seamless, end‑to‑end business processes with precision handoffs and clean execution.**
 
----
 
 ## 🚀 Inspiration
 Modern enterprises juggle humans, RPA bots, and AI agents across fragmented workflows. **FlowSync Maestro** was born to unify these actors under a single BPMN 2.0 orchestration layer—ensuring every task, decision, and handoff happens at the right time with the right performer.
