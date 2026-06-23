@@ -202,3 +202,314 @@ Here's a quick diff of what changed and why:
 | Architecture | Added 13-step table, 5-gateway diagram, tool breakdown | Was too abstract |
 | Verify Outcomes | Updated to 8 specific P2P outcomes | Was referencing "order creation" which doesn't apply |
 | Troubleshooting | Added DeepRAG, job attachment, `nextBpmnGateway` tips | Specific to our implementation |
+
+Here's a richly crafted test payload that deliberately exercises **all the key v3.0 features** — contract overbilling, working capital optimizer, lifecycle tracking, vendor scorecard, GL coding, and smart recommendations — in a single run:
+
+---
+
+## 🧪 Test Scenario: IT Equipment Invoice — Contract Rate Violation + Volume Discount Not Applied
+
+**What this payload will trigger:**
+| Feature | Expected Output |
+|---|---|
+| 📜 Contract Compliance | Line 2 overbilled by **$300** ($195 vs $180 contracted) |
+| 💹 Working Capital | PAY_EARLY recommended — **$206 net benefit** |
+| 🧾 Volume Discount | **$333 unclaimed** (35 items > 25-unit tier threshold) |
+| 🧠 Anomaly Score | MEDIUM (~30/100), `requiresManualReview: false` |
+| 🔄 Lifecycle | `FIRST_SUBMISSION`, low resubmission risk |
+| 🧾 GL Coding | All 3 lines HIGH confidence (keyword match) |
+| 🔀 BPMN Gateway | `manager_approval_path` ($11,400 > $10,000 limit) |
+
+---
+
+## 📋 Sample JSON Payload
+
+```json
+{
+  "processInstanceId": "PROC-2026-INV-0042",
+
+  "purchaseOrder": {
+    "poNumber": "PO-2026-00742",
+    "vendorId": "VND-00189",
+    "vendorName": "TechPro Solutions Ltd.",
+    "orderDate": "2026-06-01",
+    "currency": "USD",
+    "totalAmount": 11100.00,
+    "taxAmount": 0,
+    "paymentTerms": "2/10-NET45",
+    "costCenter": "CC-IT-0031",
+    "category": "IT",
+    "lineItems": [
+      {
+        "lineNumber": 1,
+        "itemCode": "HW-LAPTOP-DELL",
+        "description": "Dell Latitude 7450 Laptop",
+        "quantityOrdered": 5,
+        "unitPrice": 1200.00,
+        "totalPrice": 6000.00,
+        "glCode": "6100",
+        "deliveryDate": "2026-06-15"
+      },
+      {
+        "lineNumber": 2,
+        "itemCode": "SW-M365-E3",
+        "description": "Microsoft 365 E3 License (Annual)",
+        "quantityOrdered": 20,
+        "unitPrice": 180.00,
+        "totalPrice": 3600.00,
+        "glCode": "6110",
+        "deliveryDate": "2026-06-10"
+      },
+      {
+        "lineNumber": 3,
+        "itemCode": "SVC-IT-SUPPORT",
+        "description": "IT Support and Configuration Services",
+        "quantityOrdered": 10,
+        "unitPrice": 150.00,
+        "totalPrice": 1500.00,
+        "glCode": "7000",
+        "deliveryDate": "2026-06-20"
+      }
+    ]
+  },
+
+  "goodsReceiptNote": {
+    "grnNumber": "GRN-2026-00891",
+    "receiptDate": "2026-06-18",
+    "receivedBy": "James Thornton",
+    "lineItems": [
+      {
+        "lineNumber": 1,
+        "itemCode": "HW-LAPTOP-DELL",
+        "description": "Dell Latitude 7450 Laptop",
+        "quantityReceived": 5,
+        "condition": "GOOD"
+      },
+      {
+        "lineNumber": 2,
+        "itemCode": "SW-M365-E3",
+        "description": "Microsoft 365 E3 License (Annual)",
+        "quantityReceived": 20,
+        "condition": "GOOD"
+      },
+      {
+        "lineNumber": 3,
+        "itemCode": "SVC-IT-SUPPORT",
+        "description": "IT Support and Configuration Services",
+        "quantityReceived": 10,
+        "condition": "GOOD"
+      }
+    ]
+  },
+
+  "invoice": {
+    "invoiceNumber": "INV-TPR-2026-9841",
+    "invoiceDate": "2026-06-20",
+    "dueDate": "2026-08-04",
+    "vendorId": "VND-00189",
+    "poReference": "PO-2026-00742",
+    "currency": "USD",
+    "subtotalAmount": 11400.00,
+    "taxAmount": 0,
+    "totalAmount": 11400.00,
+    "paymentTerms": "2/10-NET45",
+    "bankDetails": {
+      "bankName": "First National Bank",
+      "accountNumber": "****7823",
+      "routingNumber": "021000021"
+    },
+    "lineItems": [
+      {
+        "lineNumber": 1,
+        "description": "Dell Latitude 7450 Laptop",
+        "quantity": 5,
+        "unitPrice": 1200.00,
+        "totalPrice": 6000.00
+      },
+      {
+        "lineNumber": 2,
+        "description": "Microsoft 365 E3 License (Annual)",
+        "quantity": 20,
+        "unitPrice": 195.00,
+        "totalPrice": 3900.00
+      },
+      {
+        "lineNumber": 3,
+        "description": "IT Support and Configuration Services",
+        "quantity": 10,
+        "unitPrice": 150.00,
+        "totalPrice": 1500.00
+      }
+    ]
+  },
+
+  "approvalThresholds": {
+    "autoApproveLimit": 2000,
+    "managerApprovalLimit": 10000,
+    "tolerancePercentage": 2.0,
+    "toleranceAmountFloor": 5.00
+  },
+
+  "vendorContext": {
+    "riskRating": "MEDIUM",
+    "historicalDiscrepancyRate": 18,
+    "onTimeDeliveryRate": 82,
+    "isPreferredVendor": false,
+    "openDisputeCount": 1
+  },
+
+  "earlyPaymentPolicy": {
+    "discountPercentage": 2.0,
+    "discountDays": 10,
+    "netDays": 45
+  },
+
+  "glCodeMapping": [
+    {
+      "keywords": ["laptop", "computer", "hardware", "dell", "device"],
+      "glCode": "6100",
+      "accountName": "IT Hardware & Equipment",
+      "category": "IT"
+    },
+    {
+      "keywords": ["microsoft", "license", "software", "m365", "subscription"],
+      "glCode": "6110",
+      "accountName": "Software Licenses & Subscriptions",
+      "category": "IT"
+    },
+    {
+      "keywords": ["support", "services", "configuration", "consulting", "professional"],
+      "glCode": "7000",
+      "accountName": "Professional & IT Services",
+      "category": "Services"
+    }
+  ],
+
+  "complianceRules": {
+    "jurisdiction": "US-CA",
+    "standardTaxRate": 8.25,
+    "taxExemptCategories": ["IT", "Software", "SaaS"]
+  },
+
+  "previousInvoiceNumbers": [
+    "INV-TPR-2026-9200",
+    "INV-TPR-2026-8855",
+    "INV-TPR-2026-8401",
+    "INV-TPR-2026-7990"
+  ],
+
+  "contractData": {
+    "contractNumber": "CTR-TECHPRO-2026-001",
+    "contractStartDate": "2026-01-01",
+    "contractEndDate": "2026-12-31",
+    "lineItems": [
+      {
+        "itemCode": "HW-LAPTOP-DELL",
+        "description": "Dell Latitude 7450 Laptop",
+        "contractedUnitPrice": 1200.00,
+        "maxQuantityPerOrder": 20
+      },
+      {
+        "itemCode": "SW-M365-E3",
+        "description": "Microsoft 365 E3 License (Annual)",
+        "contractedUnitPrice": 180.00,
+        "maxQuantityPerOrder": 100
+      },
+      {
+        "itemCode": "SVC-IT-SUPPORT",
+        "description": "IT Support and Configuration Services",
+        "contractedUnitPrice": 150.00,
+        "maxQuantityPerOrder": 50
+      }
+    ],
+    "volumeDiscountTiers": [
+      { "minQuantity": 25, "discountPercentage": 3.0 },
+      { "minQuantity": 50, "discountPercentage": 5.0 }
+    ],
+    "rebateSchedule": []
+  },
+
+  "workingCapitalConfig": {
+    "targetDPO": 45,
+    "costOfCapital": 7.0,
+    "currentCashPosition": 850000.00,
+    "monthlyPaymentBudget": 200000.00
+  },
+
+  "invoiceHistory": {
+    "submissionCount": 1,
+    "firstReceivedDate": "2026-06-21",
+    "previousSubmissions": []
+  },
+
+  "processContext": "Invoice received via vendor portal on 2026-06-21. RPA extracted PO-2026-00742 from SAP ERP and GRN-2026-00891 from Warehouse Management System. Forwarded to agent for 3-way match and intelligent reconciliation."
+}
+```
+
+---
+
+## 🎯 What to Validate in the Output
+
+Once you paste this into Agent Builder and run it, check these specific fields:
+
+### Core Routing
+```
+matchStatus          → "MISMATCH"             (2.70% variance > 2% tolerance)
+recommendation       → "ESCALATE_TO_MANAGER"  (rule 4: $11,400 > $10,000 limit)
+nextBpmnGateway      → "manager_approval_path"
+confidenceScore      → 90–95                  (all docs present, structured)
+```
+
+### Contract Compliance (Step 5)
+```
+contractComplianceCheck.overallCompliant         → false
+contractComplianceCheck.lineCompliance[1]        → isCompliant: false
+                                                   overbillingAmount: 300.00
+                                                   (195 - 180) × 20 = $300
+contractComplianceCheck.totalOverbillingAmount   → 300.00
+contractComplianceCheck.volumeDiscountApplicable → true  (5+20+10=35 > 25 tier)
+contractComplianceCheck.expectedDiscountAmount   → 333.00  (3% of $11,100)
+contractComplianceCheck.discountApplied          → false
+```
+
+### Working Capital (Step 7)
+```
+workingCapitalAnalysis.earlyPaymentCost         → ~$21.87
+                                                  ($11,400 × 7% × 10/365)
+workingCapitalAnalysis.earlyPaymentNetBenefit   → ~$206.13  ($228 - $21.87)
+workingCapitalAnalysis.paymentRecommendation    → "PAY_EARLY"
+workingCapitalAnalysis.annualizedSavings        → $2,736.00  ($228 × 12)
+```
+
+### Smart Recommendations (Step 13)
+```
+smartRecommendations[0]  → "Recover Contract Overbilling"     $300 COST_SAVINGS IMMEDIATE
+smartRecommendations[1]  → "Claim Unapplied Volume Discount"  $333 COST_SAVINGS IMMEDIATE
+smartRecommendations[2]  → "Capture Early Payment Discount"   $228 COST_SAVINGS IMMEDIATE
+```
+
+### Vendor & GL
+```
+vendorScorecard.overallScore             → ~73.6
+  (68×0.6 + 82×0.4 = 40.8 + 32.8)
+vendorScorecard.strategicRecommendation → "MONITOR"  (score 60–80)
+glCodingSuggestions[all]                → confidence: "HIGH"  (keyword match)
+taxComplianceCheck.isCompliant          → true  (IT category exempt in US-CA)
+invoiceLifecycle.lifecycleStatus        → "FIRST_SUBMISSION"
+```
+
+---
+
+## 🔀 Variant Payloads to Try
+
+Want to test other BPMN paths? Change just one field:
+
+| Change | Expected gateway |
+|---|---|
+| `vendorContext.riskRating: "BLOCKED"` | `fraud_hold_path` |
+| `invoice.bankDetails.accountNumber: "****9999"` (different) | `fraud_hold_path` |
+| `invoice.invoiceNumber: "INV-TPR-2026-9200"` (duplicate) | `fraud_hold_path` |
+| `invoice.totalAmount: 1800` + `purchaseOrder.totalAmount: 1800` | `auto_approve_path` |
+| `invoiceHistory.submissionCount: 3` | `CHRONIC_DISPUTE` lifecycle |
+
+
